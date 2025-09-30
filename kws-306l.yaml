@@ -12,6 +12,8 @@ substitutions:
   kws_measured_voltage: "Measured Voltage"
   kws_measured_current: "Measured Current"
   kws_measured_power: "Measured Power"
+  kws_reactive_power: "Reactive Power"
+  kws_apparent_power: "Apparent Power"
   kws_measured_pf: "Measured Power Factor"
   kws_measured_freq: "Measured Frequency"
   kws_measured_energy: "Measured Energy"
@@ -27,6 +29,8 @@ substitutions:
   kws_limit_op: "Limit Over-Power"
   kws_limit_temp: "Limit Over-Temp"
   kws_limit_energy: "Limit Energy"
+  kws_voltage_inbalance: "Voltage inbalance"
+  kws_current_inbalance: "Current inbalance"
   kws_set_address: "Set Device Slave Address (⚠ Changing may disconnect)"
   kws_set_backlight_timeout: "Set Backlight Timeout"
   kws_set_backlight_brightness: "Set Backlight Brightness"
@@ -148,7 +152,99 @@ sensor:
     accuracy_decimals: 1
     filters: [ multiply: 0.1 ]
 
+  # Reactive Power
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} ${kws_reactive_power}"
+    register_type: holding
+    address: 31
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} P1 ${kws_reactive_power}"
+    register_type: holding
+    address: 33
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} P2 ${kws_reactive_power}"
+    register_type: holding
+    address: 35
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} P3 ${kws_reactive_power}"
+    register_type: holding
+    address: 37
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
+  # Apparent Power
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} ${kws_apparent_power}"
+    register_type: holding
+    address: 39
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} P1 ${kws_apparent_power}"
+    register_type: holding
+    address: 41
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} P2 ${kws_apparent_power}"
+    register_type: holding
+    address: 43
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} P3 ${kws_apparent_power}"
+    register_type: holding
+    address: 45
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    filters: [ multiply: 0.1 ]
+
   # Measured Power Factor
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} ${kws_measured_pf}"
+    register_type: holding
+    address: 47
+    value_type: U_WORD
+    unit_of_measurement: ""
+    accuracy_decimals: 3
+    filters: [ multiply: 0.001 ]
+    
   - platform: modbus_controller
     modbus_controller_id: ${kws_id}
     name: "${kws_name} P1 ${kws_measured_pf}"
@@ -288,9 +384,11 @@ text_sensor:
           return {"Over Voltage"};
         case 2:
           return {"Under Voltage"};
-        case 4:
+        case 3:
           return {"Over Current"};
-        case 32:
+        case 4:
+          return {"Over Power"};    
+        case 6:
           return {"Over Temperature"};
         default:
           char buffer[32];
@@ -359,6 +457,36 @@ number:
     multiply: 100 # for 12.0kW stored value will be 1200
     mode: box
 
+  # Voltage imbalance
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} ${kws_voltage_inbalance}"
+    address: 68
+    register_type: holding
+    use_write_multiple: True
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    min_value: 0
+    max_value: 290
+    step: 1
+    multiply: 10
+    mode: box
+
+  # Current imbalance
+  - platform: modbus_controller
+    modbus_controller_id: ${kws_id}
+    name: "${kws_name} ${kws_current_inbalance}"
+    address: 69
+    register_type: holding
+    use_write_multiple: True
+    value_type: U_WORD
+    unit_of_measurement: "A"
+    min_value: 0
+    max_value: 99
+    step: 1
+    multiply: 10
+    mode: box
+    
   # Limit Over-Temp
   # Sets the over-temperature protection threshold.
   - platform: modbus_controller
@@ -375,28 +503,19 @@ number:
     mode: box
 
   # Limit Energy
-  # ⚠️ FIRMWARE BUG: The energy limit is stored across registers 73 and 74 as a 32-bit value:
-  # total_limit_wh = (reg[73] * 65535) + reg[74]
-  #
-  # However, writing to one register (73 or 74) resets the other to zero, same as writing 32-bit value to two registers!
-  # To avoid this issue, we write only to register 74 - this limits the range to 0 - 65535 Wh
-  # (i.e. 0 - 65.535 kWh) in 0.1 kWh steps, but avoids corrupting the full value.
-  #
-  # Writing to register 73 directly increases the energy limit in large 65.535 kWh steps.
-  # Reading always returns the correct value, but value over 65.5kWh can only be set from within the device.
   - platform: modbus_controller
     modbus_controller_id: ${kws_id}
     name: "${kws_name} ${kws_limit_energy}"
     address: 73
     register_type: holding
     use_write_multiple: True
-    value_type: U_WORD
+    value_type: U_DWORD
     unit_of_measurement: "kWh"
     min_value: 0.0
-    max_value: 65.5
-    step: 0.1
+    max_value: 9999999
+    step: 1
     mode: box
-    multiply: 1000 # for 10.0kWh stored value will be 10000
+    multiply: 1
 
   # Set Backlight Timeout
   # This setting defines how long the backlight stays on (in minutes).
@@ -409,7 +528,7 @@ number:
     value_type: U_WORD
     unit_of_measurement: "min"
     min_value: 0
-    max_value: 60
+    max_value: 59
     step: 1
     mode: box
 
@@ -425,4 +544,5 @@ number:
 
 switch:
   - platform: restart
+
     name: "Restart"
