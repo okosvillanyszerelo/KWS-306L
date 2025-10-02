@@ -153,47 +153,6 @@ sensor:
     accuracy_decimals: 1
     filters: [ multiply: 0.1 ]
 
-  # Reactive Power
-  - platform: modbus_controller
-    modbus_controller_id: ${kws_id}
-    name: "${kws_name} ${kws_reactive_power}"
-    register_type: holding
-    address: 31
-    value_type: U_DWORD
-    unit_of_measurement: "VAR"
-    accuracy_decimals: 1
-    filters: [ multiply: 0.1 ]
-
-  - platform: modbus_controller
-    modbus_controller_id: ${kws_id}
-    name: "${kws_name} P1 ${kws_reactive_power}"
-    register_type: holding
-    address: 33
-    value_type: U_DWORD
-    unit_of_measurement: "VAR"
-    accuracy_decimals: 1
-    filters: [ multiply: 0.1 ]
-
-  - platform: modbus_controller
-    modbus_controller_id: ${kws_id}
-    name: "${kws_name} P2 ${kws_reactive_power}"
-    register_type: holding
-    address: 35
-    value_type: U_DWORD
-    unit_of_measurement: "VAR"
-    accuracy_decimals: 1
-    filters: [ multiply: 0.1 ]
-
-  - platform: modbus_controller
-    modbus_controller_id: ${kws_id}
-    name: "${kws_name} P3 ${kws_reactive_power}"
-    register_type: holding
-    address: 37
-    value_type: U_DWORD
-    unit_of_measurement: "VAR"
-    accuracy_decimals: 1
-    filters: [ multiply: 0.1 ]
-
   # Apparent Power
   - platform: modbus_controller
     modbus_controller_id: ${kws_id}
@@ -547,5 +506,6 @@ switch:
   - platform: restart
 
     name: "Restart"
+
 
 
